@@ -1,11 +1,14 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
+import authRoutes from './auth.routes';
 import loanRoutes from './loan.routes';
 import loanusuarios from './loan.usuarios';
 import loanambientes from './loan.ambientes';
 import loanequipos from './loan.equipos';
 import loannovedades from './loan.novedades';
 import loandashboard from './loan.dashboard';
+
 const router = Router();
+router.use('/auth', authRoutes);
 router.use('/loans', loanRoutes);
 router.use('/usuarios', loanusuarios);
 router.use('/ambientes', loanambientes);

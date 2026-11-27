@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Guía de aprendizaje para autenticación JWT y permisos RBAC en la API ControlLabs.">
+  <title>Guía de aprendizaje | JWT y RBAC en ControlLabs</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #64748b;
+      --line: #dce5ef;
+      --paper: #fff;
+      --canvas: #f2f6fa;
+      --blue: #145da0;
+      --blue-soft: #e8f2fc;
+      --green: #0c7a61;
+      --green-soft: #e8f7f1;
+      --amber: #8b5a08;
+      --amber-soft: #fff6df;
+      --navy: #10233d;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--canvas); line-height: 1.65; }
+    a { color: var(--blue); }
+    code, pre { font-family: Consolas, "SFMono-Regular", monospace; }
+    code { overflow-wrap: anywhere; }
+    .hero {
+      padding: 64px max(24px, calc((100% - 1040px) / 2));
+      color: #f8fbff;
+      background: radial-gradient(circle at 85% 20%, #245a83 0, transparent 30%), var(--navy);
+    }
+    .eyebrow { color: #8de0c6; font-size: .78rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { max-width: 760px; margin: 12px 0; font-size: clamp(2.2rem, 6vw, 4rem); line-height: 1.08; letter-spacing: -.04em; }
+    .hero p { max-width: 680px; color: #cfdaea; font-size: 1.08rem; }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+    .pill { padding: 6px 12px; border: 1px solid #49617e; border-radius: 999px; color: #e1ebf8; font-size: .85rem; }
+    main { width: min(100% - 32px, 1000px); margin: 32px auto 72px; }
+    .toc, section, .callout { margin: 18px 0; padding: 26px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); box-shadow: 0 8px 26px #17203308; }
+    .toc { display: flex; flex-wrap: wrap; gap: 10px 24px; }
+    .toc a { font-size: .92rem; font-weight: 650; text-decoration: none; }
+    h2 { margin: 0 0 14px; font-size: 1.55rem; letter-spacing: -.02em; }
+    h3 { margin: 22px 0 8px; font-size: 1.08rem; }
+    p { margin: 8px 0 14px; }
+    .muted { color: var(--muted); }
+    .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 20px; }
+    .step { padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: #fbfdff; }
+    .step b { display: block; margin-bottom: 5px; color: var(--blue); }
+    .step span { color: var(--muted); font-size: .9rem; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 580px; }
+    th, td { padding: 13px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: #334155; background: #f7fafe; font-size: .86rem; }
+    td { font-size: .92rem; }
+    .role { display: inline-block; padding: 3px 8px; border-radius: 7px; background: var(--blue-soft); color: #174875; font-size: .78rem; font-weight: 800; }
+    .yes { color: var(--green); font-weight: 750; }
+    .no { color: #94a3b8; }
+    pre { overflow-x: auto; margin: 12px 0; padding: 17px; border: 1px solid #21344d; border-radius: 12px; background: #132238; color: #dbeafe; font-size: .86rem; line-height: 1.6; }
+    .callout { border-color: #b6dfd0; background: var(--green-soft); }
+    .callout.warning { border-color: #f0d99e; background: var(--amber-soft); }
+    .callout strong { color: #184a3d; }
+    .warning strong { color: #714908; }
+    .checklist { padding-left: 1.2rem; }
+    .checklist li { margin: 7px 0; }
+    details { margin: 12px 0; border: 1px solid var(--line); border-radius: 12px; background: #fbfdff; }
+    summary { padding: 14px 16px; color: #174875; cursor: pointer; font-weight: 750; }
+    details[open] summary { border-bottom: 1px solid var(--line); }
+    details pre { margin: 12px; }
+    .file-instruction { margin: 12px 16px 0; color: var(--muted); font-size: .92rem; }
+    footer { padding: 24px; color: var(--muted); text-align: center; font-size: .85rem; }
+    @media (max-width: 700px) {
+      .hero { padding: 44px 24px; }
+      .flow { grid-template-columns: 1fr 1fr; }
+      section, .toc, .callout { padding: 20px; }
+    }
+    @media (max-width: 430px) { .flow { grid-template-columns: 1fr; } }
+    @media print {
+      body { background: white; }
+      .hero { padding: 28px; print-color-adjust: exact; }
+      main { width: 100%; margin: 16px auto; }
+      section, .toc, .callout { break-inside: avoid; box-shadow: none; }
+      a { color: inherit; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="eyebrow">ControlLabs · ADSO · Guía de aprendizaje</div>
+    <h1>Autenticación JWT y permisos RBAC</h1>
+    <p>Una ruta práctica para entender cómo la API identifica a una persona, verifica su token y limita cada operación según el rol asignado.</p>
+    <div class="hero-meta">
+      <span class="pill">Express + TypeScript</span>
+      <span class="pill">Prisma + PostgreSQL</span>
+      <span class="pill">Taller paso a paso · 90 min</span>
+    </div>
+  </header>
+
+  <main>
+    <nav class="toc" aria-label="Contenido de la guía">
+      <a href="#objetivo">Objetivo</a>
+      <a href="#conceptos">Conceptos</a>
+      <a href="#roles">Matriz de permisos</a>
+      <a href="#flujo">Flujo de autenticación</a>
+      <a href="#dependencias">Librerías</a>
+      <a href="#base-datos">Base de datos</a>
+      <a href="#implementacion">Implementación</a>
+      <a href="#codigo-archivo">Código por archivo</a>
+      <a href="#credenciales">Contraseñas</a>
+      <a href="#ejecutar">Ejecutar y probar</a>
+      <a href="#cierre">Cierre y solución de problemas</a>
+      <a href="#postman">Postman</a>
+    </nav>
+
+    <section id="objetivo">
+      <h2>01 · Objetivo de aprendizaje</h2>
+      <p>Al terminar esta práctica podrás explicar la diferencia entre <strong>autenticación</strong> (quién eres) y <strong>autorización</strong> (qué puedes hacer), seguir una petición protegida por Express y probar respuestas exitosas y denegadas.</p>
+      <p class="muted">La implementación vive en <code>src/auth</code>, <code>src/middlewares</code>, <code>src/services/auth.service.ts</code> y las rutas de <code>src/routes</code>.</p>
+    </section>
+
+    <section id="conceptos">
+      <h2>02 · Dos conceptos, dos preguntas</h2>
+      <p><strong>JWT (JSON Web Token)</strong> es un token firmado que la API entrega después de comprobar las credenciales. En cada solicitud protegida, el cliente lo envía en el encabezado <code>Authorization: Bearer &lt;token&gt;</code>. La firma permite detectar cambios; el contenido del token no está cifrado, así que nunca pongas contraseñas ni datos secretos dentro.</p>
+      <p><strong>RBAC (Role-Based Access Control)</strong> asigna permisos a roles. El middleware comprueba el rol antes de que el controlador ejecute la acción. Tener un token válido no significa tener permiso para todas las rutas.</p>
+      <div class="callout">
+        <strong>Idea clave:</strong> validar el token responde «¿quién llama?»; autorizar el rol responde «¿puede realizar esta acción?».
+      </div>
+    </section>
+
+    <section id="roles">
+      <h2>03 · Matriz de permisos de ControlLabs</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Acción</th><th><span class="role">INSTRUCTOR</span></th><th><span class="role">GUARDA</span></th><th><span class="role">ADMIN</span></th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Generar un préstamo</td><td class="no">No</td><td class="yes">Sí; queda ligado al guarda autenticado</td><td class="no">No</td></tr>
+            <tr><td>Buscar préstamos</td><td class="yes">Solo los asignados</td><td class="yes">Solo los generados por él</td><td class="yes">Todos</td></tr>
+            <tr><td>Consultar un préstamo por ID</td><td class="yes">Solo los asignados</td><td class="yes">Solo los generados por él</td><td class="yes">Todos</td></tr>
+            <tr><td>Aceptar un préstamo</td><td class="yes">Sí; solo los asignados a él</td><td class="no">No</td><td class="no">No</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted">Las rutas requieren token. El guarda ve los préstamos que generó; el instructor, los que le asignaron; el administrador puede consultar todos.</p>
+    </section>
+
+    <section id="flujo">
+      <h2>04 · El recorrido de una solicitud</h2>
+      <div class="flow">
+        <div class="step"><b>1. Login</b><span>Se envían correo y contraseña a <code>POST /api/v1/auth/login</code>.</span></div>
+        <div class="step"><b>2. Verificación</b><span>La API compara el hash y comprueba que la cuenta esté activa.</span></div>
+        <div class="step"><b>3. Token</b><span>Se firma un JWT HS256 con identidad y rol; expira en 15 minutos.</span></div>
+        <div class="step"><b>4. Permiso</b><span>El middleware valida firma y vencimiento; luego RBAC decide si continúa.</span></div>
+      </div>
+      <h3>¿Qué aporta cada pieza?</h3>
+      <ul>
+        <li><code>bcryptjs</code> compara la contraseña con el hash guardado; la contraseña original no se almacena.</li>
+        <li><code>authenticate</code> valida el token y pone el usuario autenticado en <code>req.user</code>.</li>
+        <li><code>authorize(...roles)</code> permite o deniega según el rol incluido en el token.</li>
+        <li>El controlador toma el <code>guardaId</code> desde <code>req.user</code>; el guarda selecciona al instructor destinatario y la API valida que sea un instructor activo.</li>
+      </ul>
+    </section>
+
+    <section id="dependencias">
+      <h2>05 · Librerías: qué instalar y por qué</h2>
+      <p>Abre una terminal en la carpeta raíz del proyecto. Este proyecto ya usa Express, Prisma, dotenv y TypeScript; solo agregamos las dependencias que necesita la autenticación.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Paquete</th><th>Tipo</th><th>¿Para qué se usa?</th></tr></thead>
+          <tbody>
+            <tr><td><code>jsonwebtoken</code></td><td>Producción</td><td>Firma el JWT al iniciar sesión y comprueba su firma, vencimiento, emisor y audiencia en cada petición.</td></tr>
+            <tr><td><code>bcryptjs</code></td><td>Producción</td><td>Compara la contraseña escrita con un hash de una sola vía. No guarda ni recupera la contraseña original.</td></tr>
+            <tr><td><code>@types/jsonwebtoken</code></td><td>Desarrollo</td><td>Da tipos de TypeScript para las funciones y opciones de <code>jsonwebtoken</code>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <pre><code>npm install jsonwebtoken bcryptjs
+npm install --save-dev @types/jsonwebtoken</code></pre>
+      <p><strong>No instales <code>@types/bcryptjs</code>:</strong> la versión usada incluye sus propios tipos. Tampoco instales otra vez Express o Prisma; ya están en el <code>package.json</code>.</p>
+      <h3>Comprueba el resultado</h3>
+      <pre><code>npm ls jsonwebtoken bcryptjs @types/jsonwebtoken</code></pre>
+      <p class="muted">Al terminar, revisa que los dos primeros aparezcan en <code>dependencies</code> y los tipos en <code>devDependencies</code>. Conserva el <code>package-lock.json</code> para que el equipo instale las mismas versiones con <code>npm install</code>.</p>
+    </section>
+
+    <section id="base-datos">
+      <h2>06 · Paso a paso: preparar la base de datos</h2>
+      <ol class="checklist">
+        <li>Abre <code>prisma/schema.prisma</code> y agrega a <code>User</code> el campo <code>passwordHash String? @map("password_hash") @db.Text</code>. El signo <code>?</code> permite que las cuentas antiguas sigan existiendo mientras un administrador les asigna contraseña.</li>
+        <li>Agrega <code>password_hash TEXT</code> en la definición de <code>users</code> en <code>bd.sql</code>. Esto cubre las bases de datos nuevas.</li>
+        <li>Para una base ya creada, ejecuta desde la raíz el parche SQL idempotente:</li>
+      </ol>
+      <pre><code>npx prisma db execute --schema prisma/schema.prisma --file prisma/patches/add_user_password_hash.sql
+npm run db:generate</code></pre>
+      <p>El primer comando agrega la columna a PostgreSQL; el segundo regenera el cliente de Prisma para que TypeScript reconozca <code>passwordHash</code> en <code>prisma.user</code>.</p>
+      <div class="callout warning">
+        <strong>¿Por qué no <code>prisma migrate deploy</code> aquí?</strong> Esta base nació de <code>bd.sql</code> y no tiene una línea base de migraciones de Prisma. Prisma rechaza aplicar migraciones sobre un esquema ya poblado sin esa línea base (<code>P3005</code>). Para este proyecto se entrega el parche SQL directo. No borres tablas ni reinicies la base para resolverlo.
+      </div>
+    </section>
+
+    <section id="implementacion">
+      <h2>07 · Paso a paso: construir el flujo de autenticación</h2>
+      <p>Implementa en este orden. Cada etapa entrega al siguiente componente la información que necesita.</p>
+      <h3>Mapa de archivos que vas a crear o modificar</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Etapa</th><th>Archivos</th><th>Responsabilidad</th></tr></thead>
+          <tbody>
+            <tr><td>Datos</td><td><code>prisma/schema.prisma</code>, <code>bd.sql</code>, <code>prisma/patches/add_user_password_hash.sql</code></td><td>Almacenar el hash nullable para no romper las cuentas antiguas.</td></tr>
+            <tr><td>Identidad y token</td><td><code>src/auth/roles.ts</code>, <code>src/auth/authenticated-user.ts</code>, <code>src/auth/jwt.ts</code></td><td>Tipar roles/usuario y emitir o verificar JWT.</td></tr>
+            <tr><td>Credenciales</td><td><code>src/dtos/auth.dto.ts</code>, <code>src/repositories/user.repository.ts</code>, <code>src/repositories/prisma-user.repository.ts</code>, <code>src/services/auth.service.ts</code></td><td>Buscar usuarios, validar cuenta/contraseña y crear la sesión.</td></tr>
+            <tr><td>HTTP de autenticación</td><td><code>src/middlewares/validateAuth.middleware.ts</code>, <code>src/controllers/auth.controller.ts</code>, <code>src/routes/auth.routes.ts</code>, <code>src/auth-container.ts</code>, <code>src/routes/index.ts</code></td><td>Validar el login, conectar el servicio y exponer login/perfil.</td></tr>
+            <tr><td>Autorización</td><td><code>src/middlewares/auth.middleware.ts</code>, <code>src/routes/loan.routes.ts</code>, <code>src/controllers/loan.controller.ts</code>, <code>src/services/loan.service.ts</code>, <code>src/repositories/loan.repository.ts</code>, <code>src/repositories/prisma-loan.repository.ts</code></td><td>Aplicar roles y limitar préstamos al guarda creador o al instructor asignado.</td></tr>
+            <tr><td>Errores y entrada</td><td><code>src/errors/domain.error.ts</code>, <code>src/middlewares/errorHandler.middleware.ts</code>, <code>src/middlewares/validateLoan.middleware.ts</code>, <code>src/dtos/loan.dto.ts</code></td><td>Representar 401/403, validar instructor destinatario y no aceptar guardaId del cliente.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Paso 1 · Define los roles y la identidad autenticada</h3>
+      <p>En <code>src/auth/roles.ts</code>, define los únicos roles permitidos: <code>ADMIN</code>, <code>GUARDA</code> e <code>INSTRUCTOR</code>. En <code>src/auth/authenticated-user.ts</code>, agrega el tipo <code>AuthenticatedUser</code> y amplía <code>Express.Request</code> para que <code>req.user</code> tenga tipo seguro.</p>
+      <pre><code>export const USER_ROLES = ['ADMIN', 'GUARDA', 'INSTRUCTOR'] as const;
+export type UserRole = (typeof USER_ROLES)[number];</code></pre>
+      <h3>Paso 2 · Firma y verifica JWT</h3>
+      <p>En <code>src/auth/jwt.ts</code>, configura emisor <code>controllabs-api</code>, audiencia <code>controllabs-client</code>, algoritmo fijo <code>HS256</code> y duración de <strong>900 segundos</strong>. Lee <code>JWT_SECRET</code> del entorno; rechaza secretos menores a 32 bytes. Al verificar, acepta solo el algoritmo configurado y valida emisor y audiencia.</p>
+      <pre><code>const secret = process.env.JWT_SECRET;
+if (!secret || Buffer.byteLength(secret, 'utf8') &lt; 32) {
+  throw new Error('JWT_SECRET debe estar configurado con al menos 32 bytes.');
+}
+
+// Al firmar: jwt.sign({ email, rol }, secret, {
+//   algorithm: 'HS256', expiresIn: 900,
+//   issuer: 'controllabs-api', audience: 'controllabs-client'
+// });</code></pre>
+      <p>El token lleva solo identidad, correo y rol; nunca contraseña ni hash. El helper también valida que el rol del token sea uno de los tres permitidos.</p>
+      <h3>Paso 3 · Busca al usuario y compara la contraseña</h3>
+      <ul>
+        <li><code>src/repositories/user.repository.ts</code> declara el contrato de búsqueda por correo.</li>
+        <li><code>src/repositories/prisma-user.repository.ts</code> obtiene usuario, rol, estado y <code>passwordHash</code> desde Prisma.</li>
+        <li><code>src/services/auth.service.ts</code> normaliza el correo, rechaza cuentas inactivas o sin hash y ejecuta <code>bcrypt.compare(password, passwordHash)</code>.</li>
+      </ul>
+      <p>Si la validación falla, responde el mismo error de credenciales para no revelar si un correo está registrado. Si funciona, el servicio emite el token y devuelve un perfil sin la contraseña ni el hash.</p>
+      <h3>Paso 4 · Crea el endpoint de login y valida su entrada</h3>
+      <p>El validador <code>src/middlewares/validateAuth.middleware.ts</code> acepta únicamente <code>email</code> y <code>password</code>; comprueba formato, tipos y el máximo de 72 bytes que admite bcrypt. El controlador delega en el servicio.</p>
+      <pre><code>POST /api/v1/auth/login
+Content-Type: application/json
+
+{ "email": "instructor.ti@sena.edu.co", "password": "&lt;contraseña&gt;" }</code></pre>
+      <p>Registra la ruta en <code>src/routes/auth.routes.ts</code> y monta el router con <code>router.use('/auth', authRoutes)</code> en <code>src/routes/index.ts</code>. El login es público; <code>GET /auth/me</code> sí requiere token.</p>
+      <h3>Paso 5 · Protege rutas con dos middlewares</h3>
+      <ul>
+        <li><code>authenticate</code> lee <code>Authorization: Bearer ...</code>, verifica el JWT y guarda al usuario en <code>req.user</code>. Si falta o no es válido, responde <code>401</code>.</li>
+        <li><code>authorize(...roles)</code> compara <code>req.user.rol</code> con los roles permitidos. Si el usuario está autenticado pero no autorizado, responde <code>403</code>.</li>
+      </ul>
+      <h3>Paso 6 · Aplica RBAC y evita suplantación</h3>
+      <p>En <code>src/routes/loan.routes.ts</code>, agrega <code>router.use(authenticate)</code> y la autorización por endpoint:</p>
+      <ul>
+        <li><code>POST /loans</code>: solo <code>GUARDA</code>; el guarda queda asociado como creador.</li>
+        <li><code>GET /loans/search</code> y <code>GET /loans/:id</code>: los tres roles autenticados; guardas e instructores ven solo los suyos.</li>
+        <li><code>PUT /loans/:id/accept</code>: solo <code>INSTRUCTOR</code> y únicamente si el préstamo está asignado a él.</li>
+      </ul>
+      <p>En el controlador, toma <code>guardaId</code> de <code>req.user.id</code>, nunca del cuerpo. El <code>instructorId</code> del cuerpo señala al destinatario; el servicio verifica que sea un instructor activo. Las consultas quedan limitadas al guarda creador o al instructor asignado, según el rol.</p>
+    </section>
+
+    <section id="codigo-archivo">
+      <h2>08 · Código exacto, archivo por archivo</h2>
+      <p>Usa esta sección junto al árbol de archivos del proyecto. Sigue el orden indicado y guarda cada archivo antes de continuar. En los bloques que dicen <strong>archivo nuevo</strong>, crea el archivo y pega todo su contenido. En los bloques de archivos existentes, agrega o reemplaza solo el fragmento descrito.</p>
+
+      <h3>A. Dependencias y base de datos</h3>
+      <details>
+        <summary>Paso A1 · package.json — instala, no edites a mano</summary>
+        <p class="file-instruction">Desde la raíz, ejecuta estos comandos. npm actualizará <code>package.json</code> y <code>package-lock.json</code>:</p>
+        <pre><code>npm install jsonwebtoken bcryptjs
+npm install --save-dev @types/jsonwebtoken</code></pre>
+        <p class="file-instruction"><code>@types/jsonwebtoken</code> es necesario para TypeScript. <code>bcryptjs</code> ya incluye sus tipos.</p>
+      </details>
+      <details>
+        <summary>Paso A2 · prisma/schema.prisma — agrega un campo al modelo User</summary>
+        <p class="file-instruction">Dentro del bloque <code>model User</code>, agrega esta línea junto a los demás campos de usuario:</p>
+        <pre><code>passwordHash String? @map("password_hash") @db.Text</code></pre>
+      </details>
+      <details>
+        <summary>Paso A3 · bd.sql — agrega la columna para bases nuevas</summary>
+        <p class="file-instruction">En <code>CREATE TABLE users</code>, deja el nuevo campo entre <code>rol</code> y <code>activo</code>:</p>
+        <pre><code>password_hash TEXT,</code></pre>
+      </details>
+      <details>
+        <summary>Paso A4 · prisma/patches/add_user_password_hash.sql — archivo nuevo completo</summary>
+        <pre><code>ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "password_hash" TEXT;</code></pre>
+        <p class="file-instruction">Ejecuta una sola vez (puedes repetirlo; es idempotente):</p>
+        <pre><code>npx prisma db execute --schema prisma/schema.prisma --file prisma/patches/add_user_password_hash.sql
+npm run db:generate</code></pre>
+      </details>
+
+      <h3>B. Crea los archivos de autenticación</h3>
+      <details>
+        <summary>Paso B1 · src/auth/roles.ts — archivo nuevo completo</summary>
+        <pre><code>export const USER_ROLES = ['ADMIN', 'GUARDA', 'INSTRUCTOR'] as const;
+
+export type UserRole = (typeof USER_ROLES)[number];
+
+export const isUserRole = (value: unknown): value is UserRole =&gt;
+  typeof value === 'string' &amp;&amp; USER_ROLES.some((role) =&gt; role === value);</code></pre>
+      </details>
+      <details>
+        <summary>Paso B2 · src/auth/authenticated-user.ts — archivo nuevo completo</summary>
+        <pre><code>import { UserRole } from './roles';
+
+export interface AuthenticatedUser {
+  id: string;
+  email: string;
+  rol: UserRole;
+}
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: AuthenticatedUser;
+    }
+  }
+}</code></pre>
+      </details>
+      <details>
+        <summary>Paso B3 · src/auth/jwt.ts — archivo nuevo completo</summary>
+        <pre><code>import jwt from 'jsonwebtoken';
+import { AuthenticatedUser } from './authenticated-user';
+import { isUserRole } from './roles';
+
+const ISSUER = 'controllabs-api';
+const AUDIENCE = 'controllabs-client';
+const TOKEN_LIFETIME_SECONDS = 900;
+
+const getJwtSecret = (): string =&gt; {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || Buffer.byteLength(secret, 'utf8') &lt; 32) {
+    throw new Error('JWT_SECRET debe estar configurado con al menos 32 bytes.');
+  }
+  return secret;
+};
+
+export const createAccessToken = (user: AuthenticatedUser): string =&gt;
+  jwt.sign(
+    { email: user.email, rol: user.rol },
+    getJwtSecret(),
+    {
+      algorithm: 'HS256',
+      audience: AUDIENCE,
+      expiresIn: TOKEN_LIFETIME_SECONDS,
+      issuer: ISSUER,
+      subject: user.id
+    }
+  );
+
+export const verifyAccessToken = (token: string): AuthenticatedUser | null =&gt; {
+  const payload = jwt.verify(token, getJwtSecret(), {
+    algorithms: ['HS256'],
+    audience: AUDIENCE,
+    issuer: ISSUER
+  });
+  if (
+    typeof payload === 'string' ||
+    typeof payload.sub !== 'string' ||
+    typeof payload.email !== 'string' ||
+    !isUserRole(payload.rol)
+  ) {
+    return null;
+  }
+
+  return { id: payload.sub, email: payload.email, rol: payload.rol };
+};
+
+export { TOKEN_LIFETIME_SECONDS };</code></pre>
+      </details>
+      <details>
+        <summary>Paso B4 · src/repositories/user.repository.ts — archivo nuevo completo</summary>
+        <pre><code>import { UserRole } from '../auth/roles';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  nombre: string;
+  rol: UserRole;
+  activo: boolean;
+  passwordHash: string | null;
+}
+
+export interface UserRepository {
+  findByEmail(email: string): Promise&lt;AuthUser | null&gt;;
+}</code></pre>
+      </details>
+      <details>
+        <summary>Paso B5 · src/repositories/prisma-user.repository.ts — archivo nuevo completo</summary>
+        <pre><code>import { PrismaClient } from '@prisma/client';
+import { isUserRole } from '../auth/roles';
+import { AuthUser, UserRepository } from './user.repository';
+
+export class PrismaUserRepository implements UserRepository {
+  constructor(private readonly database: PrismaClient) {}
+
+  public async findByEmail(email: string): Promise&lt;AuthUser | null&gt; {
+    const user = await this.database.user.findUnique({ where: { email } });
+    if (!user) {
+      return null;
+    }
+    if (!isUserRole(user.rol)) {
+      throw new Error(`Rol de usuario no reconocido en la base de datos: ${user.rol}`);
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      nombre: user.nombre,
+      rol: user.rol,
+      activo: user.activo,
+      passwordHash: user.passwordHash
+    };
+  }
+}</code></pre>
+      </details>
+      <details>
+        <summary>Paso B6 · src/dtos/auth.dto.ts — archivo nuevo completo</summary>
+        <pre><code>export interface LoginDTO {
+  email: string;
+  password: string;
+}</code></pre>
+      </details>
+      <details>
+        <summary>Paso B7 · src/services/auth.service.ts — archivo nuevo completo</summary>
+        <pre><code>import bcrypt from 'bcryptjs';
+import { AuthenticatedUser } from '../auth/authenticated-user';
+import { createAccessToken, TOKEN_LIFETIME_SECONDS } from '../auth/jwt';
+import { DomainError } from '../errors/domain.error';
+import { UserRepository } from '../repositories/user.repository';
+
+export class AuthService {
+  constructor(private readonly userRepository: UserRepository) {}
+
+  public async login(
+    email: string,
+    password: string
+  ): Promise&lt;{ accessToken: string; expiresIn: number; user: AuthenticatedUser }&gt; {
+    const user = await this.userRepository.findByEmail(email.trim().toLowerCase());
+    const passwordMatches =
+      user?.passwordHash !== null &amp;&amp;
+      user?.passwordHash !== undefined &amp;&amp;
+      (await bcrypt.compare(password, user.passwordHash));
+
+    if (!user || !user.activo || !passwordMatches) {
+      throw new DomainError('UNAUTHORIZED', 'Correo o contraseña incorrectos.');
+    }
+
+    const authenticatedUser: AuthenticatedUser = {
+      id: user.id,
+      email: user.email,
+      rol: user.rol
+    };
+    return {
+      accessToken: createAccessToken(authenticatedUser),
+      expiresIn: TOKEN_LIFETIME_SECONDS,
+      user: authenticatedUser
+    };
+  }
+}</code></pre>
+      </details>
+
+      <h3>C. Agrega validación, controladores y rutas de login</h3>
+      <details>
+        <summary>Paso C1 · src/middlewares/validateAuth.middleware.ts — archivo nuevo completo</summary>
+        <pre><code>import { NextFunction, Request, Response } from 'express';
+
+const isLoginPayload = (
+  value: unknown
+): value is { email: string; password: string } =&gt; {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const payload = value as Record&lt;string, unknown&gt;;
+  return (
+    Object.keys(payload).every((key) =&gt; key === 'email' || key === 'password') &amp;&amp;
+    typeof payload.email === 'string' &amp;&amp;
+    payload.email.length &lt;= 255 &amp;&amp;
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email) &amp;&amp;
+    typeof payload.password === 'string' &amp;&amp;
+    Buffer.byteLength(payload.password, 'utf8') &gt; 0 &amp;&amp;
+    Buffer.byteLength(payload.password, 'utf8') &lt;= 72
+  );
+};
+
+export const validateLoginPayload = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void =&gt; {
+  if (!isLoginPayload(req.body)) {
+    res.status(400).json({
+      success: false,
+      code: 'VALIDATION_ERROR',
+      error: 'Debes enviar un correo válido y una contraseña de hasta 72 bytes.'
+    });
+    return;
+  }
+  next();
+};</code></pre>
+      </details>
+      <details>
+        <summary>Paso C2 · src/auth-container.ts — archivo nuevo completo</summary>
+        <pre><code>import { prisma } from './db/prisma';
+import { PrismaUserRepository } from './repositories/prisma-user.repository';
+import { AuthService } from './services/auth.service';
+
+const userRepository = new PrismaUserRepository(prisma);
+export const authService = new AuthService(userRepository);</code></pre>
+      </details>
+      <details>
+        <summary>Paso C3 · src/controllers/auth.controller.ts — archivo nuevo completo</summary>
+        <pre><code>import { NextFunction, Request, Response } from 'express';
+import { DomainError } from '../errors/domain.error';
+import { authService } from '../auth-container';
+import { LoginDTO } from '../dtos/auth.dto';
+
+export class AuthController {
+  public static login = async (
+    req: Request&lt;Record&lt;string, string&gt;, unknown, LoginDTO&gt;,
+    res: Response,
+    next: NextFunction
+  ): Promise&lt;void&gt; =&gt; {
+    try {
+      const result = await authService.login(req.body.email, req.body.password);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public static me = (req: Request, res: Response, next: NextFunction): void =&gt; {
+    if (!req.user) {
+      next(new DomainError('UNAUTHORIZED', 'Debes iniciar sesión para continuar.'));
+      return;
+    }
+    res.status(200).json({ success: true, data: req.user });
+  };
+}</code></pre>
+      </details>
+      <details>
+        <summary>Paso C4 · src/routes/auth.routes.ts — archivo nuevo completo</summary>
+        <pre><code>import { Router } from 'express';
+import { AuthController } from '../controllers/auth.controller';
+import { authenticate } from '../middlewares/auth.middleware';
+import { validateLoginPayload } from '../middlewares/validateAuth.middleware';
+
+const router = Router();
+
+router.post('/login', validateLoginPayload, AuthController.login);
+router.get('/me', authenticate, AuthController.me);
+
+export default router;</code></pre>
+      </details>
+      <details>
+        <summary>Paso C5 · src/routes/index.ts — agrega el router de autenticación</summary>
+        <p class="file-instruction">Agrega el import y el montaje de rutas:</p>
+        <pre><code>import authRoutes from './auth.routes';
+
+router.use('/auth', authRoutes);</code></pre>
+        <p class="file-instruction">Conserva el import y montaje existentes de <code>loanRoutes</code>.</p>
+      </details>
+
+      <h3>D. Protege las rutas y aplica permisos</h3>
+      <details>
+        <summary>Paso D1 · src/middlewares/auth.middleware.ts — archivo nuevo completo</summary>
+        <pre><code>import { NextFunction, Request, Response } from 'express';
+import { JsonWebTokenError, NotBeforeError, TokenExpiredError } from 'jsonwebtoken';
+import { verifyAccessToken } from '../auth/jwt';
+import { UserRole } from '../auth/roles';
+
+export const authenticate = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void =&gt; {
+  const authorization = req.header('authorization');
+  const bearerToken = /^Bearer\s+([^\s]+)$/i.exec(authorization ?? '');
+  if (!bearerToken) {
+    res.status(401).json({ success: false, error: 'Se requiere un token Bearer válido.' });
+    return;
+  }
+
+  try {
+    const user = verifyAccessToken(bearerToken[1]);
+    if (!user) {
+      res.status(401).json({ success: false, error: 'El token no es válido.' });
+      return;
+    }
+    req.user = user;
+    next();
+  } catch (error) {
+    if (
+      error instanceof JsonWebTokenError ||
+      error instanceof TokenExpiredError ||
+      error instanceof NotBeforeError
+    ) {
+      res.status(401).json({ success: false, error: 'El token no es válido o ha expirado.' });
+      return;
+    }
+    next(error);
+  }
+};
+
+export const authorize = (...allowedRoles: UserRole[]) =&gt; (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void =&gt; {
+  if (!req.user) {
+    res.status(401).json({ success: false, error: 'Debes iniciar sesión para continuar.' });
+    return;
+  }
+  if (!allowedRoles.includes(req.user.rol)) {
+    res.status(403).json({ success: false, error: 'No tienes permiso para realizar esta acción.' });
+    return;
+  }
+  next();
+};</code></pre>
+      </details>
+      <details>
+        <summary>Paso D2 · src/errors/domain.error.ts — agrega errores de autenticación</summary>
+        <p class="file-instruction">En la unión <code>DomainErrorCode</code>, conserva los códigos actuales y agrega:</p>
+        <pre><code>| 'UNAUTHORIZED'
+| 'FORBIDDEN'</code></pre>
+      </details>
+      <details>
+        <summary>Paso D3 · src/middlewares/errorHandler.middleware.ts — agrega estados HTTP</summary>
+        <p class="file-instruction">En el objeto <code>domainErrorStatus</code>, agrega:</p>
+        <pre><code>UNAUTHORIZED: 401,
+FORBIDDEN: 403,</code></pre>
+      </details>
+      <details>
+        <summary>Paso D4 · src/dtos/loan.dto.ts — separa el cuerpo del guarda del DTO interno</summary>
+        <p class="file-instruction">Conserva <code>ICreateLoanDTO</code> con <code>roomId</code>, <code>instructorId</code>, <code>guardaId</code> y <code>numeroPc</code>. El cuerpo HTTP del guarda contiene el instructor destinatario, pero no el guarda autenticado:</p>
+        <pre><code>export interface ICreateLoanRequestDTO {
+  roomId: string;
+  instructorId: string;
+  numeroPc: number;
+}</code></pre>
+      </details>
+      <details>
+        <summary>Paso D5 · src/middlewares/validateLoan.middleware.ts — valida el instructor destinatario</summary>
+        <p class="file-instruction">Reemplaza el import del DTO y cambia el tipo que devuelve el type guard:</p>
+        <pre><code>import { ICreateLoanRequestDTO } from '../dtos/loan.dto';
+
+const isCreateLoanDTO = (value: unknown): value is ICreateLoanRequestDTO =&gt; {</code></pre>
+        <p class="file-instruction">En esa función, permite estos campos y valida que <code>instructorId</code> también sea UUID. No aceptes <code>guardaId</code> del cliente:</p>
+        <pre><code>const allowedFields = new Set([
+  'roomId',
+  'instructorId',
+  'numeroPc'
+]);
+return (
+  Object.keys(loan).every((key) =&gt; allowedFields.has(key)) &amp;&amp;
+  isUuid(loan.roomId) &amp;&amp;
+  isUuid(loan.instructorId) &amp;&amp;
+  typeof loan.numeroPc === 'number' &amp;&amp;
+  Number.isInteger(loan.numeroPc)
+);</code></pre>
+      </details>
+      <details>
+        <summary>Paso D6 · src/routes/loan.routes.ts — reemplaza el archivo completo</summary>
+        <pre><code>import { Router } from 'express';
+import { LoanController } from '../controllers/loan.controller';
+import {
+  validateLoanIdParameter,
+  validateLoanPayload,
+  validateLoanSearchQuery
+} from '../middlewares/validateLoan.middleware';
+import { authenticate, authorize } from '../middlewares/auth.middleware';
+
+const router = Router();
+
+router.use(authenticate);
+router.post('/', authorize('GUARDA'), validateLoanPayload, LoanController.createLoan);
+router.get(
+  '/search',
+  authorize('ADMIN', 'GUARDA', 'INSTRUCTOR'),
+  validateLoanSearchQuery,
+  LoanController.getLoansByFilter
+);
+router.get(
+  '/:id',
+  authorize('ADMIN', 'GUARDA', 'INSTRUCTOR'),
+  validateLoanIdParameter,
+  LoanController.getLoanById
+);
+router.put(
+  '/:id/accept',
+  authorize('INSTRUCTOR'),
+  validateLoanIdParameter,
+  LoanController.acceptLoanInventory
+);
+
+export default router;</code></pre>
+      </details>
+      <details>
+        <summary>Paso D7 · src/controllers/loan.controller.ts — aplica identidad y alcance</summary>
+        <p class="file-instruction">Agrega o reemplaza estos imports y cambia el tipo del body de <code>createLoan</code>:</p>
+        <pre><code>import { ICreateLoanRequestDTO } from '../dtos/loan.dto';
+import { DomainError } from '../errors/domain.error';
+
+req: Request&lt;Record&lt;string, string&gt;, unknown, ICreateLoanRequestDTO&gt;,</code></pre>
+        <p class="file-instruction">Dentro de <code>createLoan</code>, el guarda autenticado es el creador; el instructor destinatario viene del cuerpo validado:</p>
+        <pre><code>if (!req.user) {
+  throw new DomainError('UNAUTHORIZED', 'Debes iniciar sesión para continuar.');
+}
+const loan = await loanService.createLoan({
+  ...req.body,
+  guardaId: req.user.id
+});</code></pre>
+        <p class="file-instruction">Al buscar, limita al instructor por <code>instructorId</code> y al guarda por <code>guardaId</code>; el administrador sin esos filtros consulta todo:</p>
+        <pre><code>const loans = await loanService.getLoans({
+  roomId,
+  ...(req.user?.rol === 'INSTRUCTOR' ? { instructorId: req.user.id } : {}),
+  ...(req.user?.rol === 'GUARDA' ? { guardaId: req.user.id } : {})
+});</code></pre>
+        <p class="file-instruction">Al consultar por ID, pasa el alcance correspondiente:</p>
+        <pre><code>const loan = await loanService.getLoanDetail(
+  req.params.id,
+  req.user?.rol === 'INSTRUCTOR'
+    ? { instructorId: req.user.id }
+    : req.user?.rol === 'GUARDA'
+      ? { guardaId: req.user.id }
+      : {}
+);</code></pre>
+        <p class="file-instruction">En <code>acceptLoanInventory</code>, pasa el ID del instructor autenticado al servicio:</p>
+        <pre><code>if (!req.user) {
+  throw new DomainError('UNAUTHORIZED', 'Debes iniciar sesión para continuar.');
+}
+const loan = await loanService.acceptLoan(req.params.id, req.user.id);</code></pre>
+      </details>
+      <details>
+        <summary>Paso D8 · Repositorio y servicio de préstamos — valida destinatario y propietario</summary>
+        <p class="file-instruction">En <code>src/repositories/loan.repository.ts</code>, amplía los filtros:</p>
+        <pre><code>export interface LoanFilters {
+  roomId?: string;
+  instructorId?: string;
+  guardaId?: string;
+}</code></pre>
+        <p class="file-instruction">En el mismo contrato, agrega el método que valida el destinatario:</p>
+        <pre><code>isActiveInstructor(id: string): Promise&lt;boolean&gt;;</code></pre>
+        <p class="file-instruction">En <code>src/repositories/prisma-loan.repository.ts</code>, combina ambos filtros en <code>findAll</code>:</p>
+        <pre><code>where: {
+  ...(filters.roomId ? { roomId: filters.roomId } : {}),
+  ...(filters.instructorId ? { instructorId: filters.instructorId } : {}),
+  ...(filters.guardaId ? { guardaId: filters.guardaId } : {})
+},</code></pre>
+        <p class="file-instruction">En <code>src/repositories/prisma-loan.repository.ts</code>, agrega este método:</p>
+        <pre><code>public async isActiveInstructor(id: string): Promise&lt;boolean&gt; {
+  const instructor = await this.database.user.findFirst({
+    where: { id, rol: 'INSTRUCTOR', activo: true },
+    select: { id: true }
+  });
+  return instructor !== null;
+}</code></pre>
+        <p class="file-instruction">En <code>src/services/loan.service.ts</code>, valida el instructor antes de guardar el préstamo:</p>
+        <pre><code>public async createLoan(input: ICreateLoanDTO): Promise&lt;Loan&gt; {
+  if (!(await this.loanRepository.isActiveInstructor(input.instructorId))) {
+  throw new DomainError(
+    'VALIDATION_ERROR',
+    'El instructor seleccionado no existe o no está activo.'
+  );
+  }
+  return this.loanRepository.create(input);
+}</code></pre>
+        <p class="file-instruction">En <code>getLoanDetail</code>, tras comprobar que el préstamo existe, rechaza cuando el registro no pertenece al guarda creador ni al instructor asignado que se consulta:</p>
+        <pre><code>if (
+  (ownership.instructorId &amp;&amp; loan.instructorId !== ownership.instructorId) ||
+  (ownership.guardaId &amp;&amp; loan.guardaId !== ownership.guardaId)
+) {
+  throw new DomainError('FORBIDDEN', 'No tienes permiso para consultar este préstamo.');
+}</code></pre>
+        <p class="file-instruction">Firma del método con ambos alcances opcionales:</p>
+        <pre><code>public async getLoanDetail(
+  id: string,
+  ownership: Pick&lt;LoanFilters, 'instructorId' | 'guardaId'&gt; = {}
+): Promise&lt;Loan&gt;</code></pre>
+        <p class="file-instruction">Usa este método completo para que primero valide que el préstamo esté asignado al instructor autenticado y luego actualice únicamente su estado:</p>
+        <pre><code>public async acceptLoan(id: string, instructorId: string): Promise&lt;Loan&gt; {
+  await this.getLoanDetail(id, { instructorId });
+  const updatedLoan = await this.loanRepository.updateStatus(
+    id,
+    'PENDIENTE_APROBACION',
+    'APROBADO_Y_FIRMADO'
+  );
+  if (updatedLoan) {
+    return updatedLoan;
+  }
+
+  const currentLoan = await this.loanRepository.findById(id);
+  if (!currentLoan) {
+    throw new DomainError('NOT_FOUND', `No existe un préstamo con identificador ${id}.`);
+  }
+  if (currentLoan.instructorId !== instructorId) {
+    throw new DomainError('FORBIDDEN', 'No tienes permiso para aceptar este préstamo.');
+  }
+  throw new DomainError('CONFLICT', 'El préstamo ya fue aceptado y no puede aceptarse nuevamente.');
+}</code></pre>
+      </details>
+      <div class="callout">
+        <strong>Al terminar esta sección:</strong> guarda los archivos y vuelve a la sección “Configurar el secreto, arrancar y probar”. Ejecuta <code>npm run db:generate</code> y <code>npm run build</code>; resuelve los errores de TypeScript antes de continuar con pruebas HTTP.
+      </div>
+    </section>
+
+    <section id="credenciales">
+      <h2>09 · Crear hash para una cuenta existente</h2>
+      <p>La base semilla trae usuarios, pero no contraseñas. Un administrador debe asignar un hash a cada cuenta que vaya a probar. Genera hashes localmente; el siguiente ejemplo de PowerShell solicita la contraseña sin mostrarla y solo imprime el hash:</p>
+      <pre><code>$securePassword = Read-Host "Contraseña temporal" -AsSecureString
+$pointer = [IntPtr]::Zero
+try {
+  $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
+  $env:INITIAL_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
+  node -e "require('bcryptjs').hash(process.env.INITIAL_PASSWORD, 12).then(console.log)"
+} finally {
+  Remove-Item Env:INITIAL_PASSWORD -ErrorAction SilentlyContinue
+  if ($pointer -ne [IntPtr]::Zero) {
+    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer)
+  }
+}</code></pre>
+      <p>Copia el hash resultante —no la contraseña— y asígnalo a un usuario específico mediante una herramienta administrativa, por ejemplo:</p>
+      <pre><code>UPDATE users
+SET password_hash = '&lt;HASH_BCRYPT_GENERADO&gt;'
+WHERE email = 'instructor.ti@sena.edu.co' AND activo = true;</code></pre>
+      <p>Confirma que la actualización afectó exactamente una cuenta. Repite el proceso con un usuario <code>GUARDA</code> y uno <code>ADMIN</code> para probar la matriz. No publiques el hash ni una contraseña de aprendiz en Git.</p>
+    </section>
+
+    <section id="ejecutar">
+      <h2>10 · Configurar el secreto, arrancar y probar</h2>
+      <h3>1. Prepara la clave JWT</h3>
+      <p>El secreto debe ser aleatorio y mantenerse privado. Este comando genera 32 bytes aleatorios codificados para el entorno:</p>
+      <pre><code>$env:JWT_SECRET = (node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))")</code></pre>
+      <p>Ejecuta el comando y luego arranca la API en <strong>la misma terminal de PowerShell</strong>; así el proceso hereda la variable:</p>
+      <pre><code>npm run db:generate
+npm run build
+npm run dev</code></pre>
+      <p>Espera el mensaje de servidor iniciado. En otra terminal, ejecuta las peticiones de abajo. En despliegues permanentes configura <code>JWT_SECRET</code> en el gestor de secretos del entorno, no en el repositorio.</p>
+      <h3>2. Inicia sesión como guarda</h3>
+      <pre><code>$guardBody = @{ email = 'guarda.seguridad@sena.edu.co'; password = '&lt;contraseña del guarda&gt;' } | ConvertTo-Json
+$guardLogin = Invoke-RestMethod -Uri 'http://localhost:5000/api/v1/auth/login' -Method Post -ContentType 'application/json' -Body $guardBody
+$guardToken = $guardLogin.data.accessToken
+$guardHeaders = @{ Authorization = "Bearer $guardToken" }
+Invoke-RestMethod -Uri 'http://localhost:5000/api/v1/auth/me' -Headers $guardHeaders</code></pre>
+      <h3>3. El guarda genera un préstamo para un instructor</h3>
+      <p>Usa UUID reales de una sala y de un usuario con rol <code>INSTRUCTOR</code>. El backend asigna <code>guardaId</code> desde el token del guarda:</p>
+      <pre><code>$loanBody = @{
+  roomId = '&lt;UUID_REAL_DE_SALA&gt;'
+  instructorId = '&lt;UUID_REAL_DE_INSTRUCTOR&gt;'
+  numeroPc = 12
+} | ConvertTo-Json
+$createdLoan = Invoke-RestMethod -Uri 'http://localhost:5000/api/v1/loans' -Method Post -Headers $guardHeaders -ContentType 'application/json' -Body $loanBody
+$createdLoan.data</code></pre>
+      <p>El guarda puede listar sus propios préstamos:</p>
+      <pre><code>Invoke-RestMethod -Uri 'http://localhost:5000/api/v1/loans/search' -Headers $guardHeaders</code></pre>
+      <h3>4. Inicia sesión como el instructor asignado y acepta</h3>
+      <pre><code>$instructorBody = @{ email = 'instructor.ti@sena.edu.co'; password = '&lt;contraseña del instructor&gt;' } | ConvertTo-Json
+$instructorLogin = Invoke-RestMethod -Uri 'http://localhost:5000/api/v1/auth/login' -Method Post -ContentType 'application/json' -Body $instructorBody
+$instructorToken = $instructorLogin.data.accessToken
+$instructorHeaders = @{ Authorization = "Bearer $instructorToken" }
+$loanId = $createdLoan.data.id
+Invoke-RestMethod -Uri "http://localhost:5000/api/v1/loans/$loanId/accept" -Method Put -Headers $instructorHeaders</code></pre>
+      <p>La aceptación solo funciona si <code>instructorId</code> del préstamo coincide con el usuario del token. El instructor puede listar únicamente los préstamos asignados a él.</p>
+      <h3>5. Verifica los casos de acceso denegado</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Prueba</th><th>Resultado esperado</th><th>Qué demuestra</th></tr></thead>
+          <tbody>
+            <tr><td>Consultar préstamos sin encabezado Authorization</td><td><code>401</code></td><td>La ruta exige identidad autenticada.</td></tr>
+            <tr><td>Usar token alterado o expirado</td><td><code>401</code></td><td>La firma y expiración del JWT se verifican.</td></tr>
+            <tr><td>Guarda intenta aceptar un préstamo con su token</td><td><code>403</code></td><td>El guarda genera, pero el instructor acepta.</td></tr>
+            <tr><td>Instructor intenta aceptar un préstamo asignado a otro instructor</td><td><code>403</code></td><td>La API valida propiedad del préstamo además del rol.</td></tr>
+            <tr><td>El instructor destinatario acepta el préstamo pendiente</td><td><code>200</code></td><td>La acción se autoriza por rol y por asignación.</td></tr>
+            <tr><td>JSON de login inválido</td><td><code>400</code></td><td>Los datos se validan antes del servicio.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted">Usa IDs que existan en tu base para las pruebas de préstamo. Un ID inexistente puede producir <code>404</code> aunque la autenticación funcione correctamente.</p>
+    </section>
+
+    <section id="cierre">
+      <h2>11 · Errores comunes y lista de finalización</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Señal</th><th>Revisa</th></tr></thead>
+          <tbody>
+            <tr><td>El servidor indica que falta <code>JWT_SECRET</code></td><td>Genera la clave y ejecuta <code>npm run dev</code> en la misma terminal. Comprueba que tenga al menos 32 bytes.</td></tr>
+            <tr><td><code>prisma.user.passwordHash</code> no existe en TypeScript</td><td>Ejecuta <code>npm run db:generate</code> después de editar el esquema Prisma.</td></tr>
+            <tr><td>Login siempre devuelve credenciales incorrectas</td><td>Confirma que la cuenta esté activa y que <code>password_hash</code> contenga un hash bcrypt, no texto plano ni NULL.</td></tr>
+            <tr><td><code>401</code></td><td>Falta token, el token no se envió como <code>Bearer</code>, expiró o no coincide el secreto.</td></tr>
+            <tr><td><code>403</code></td><td>La sesión sí es válida; revisa el rol y la propiedad del préstamo.</td></tr>
+            <tr><td><code>P3005</code> al usar migraciones</td><td>La base tiene tablas existentes sin línea base de Prisma. Usa el parche SQL documentado; no borres tablas.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>La implementación está completa cuando puedes marcar todo esto</h3>
+      <ul class="checklist">
+        <li>Instalaste <code>jsonwebtoken</code>, <code>bcryptjs</code> y los tipos necesarios.</li>
+        <li>La columna <code>password_hash</code> existe y las cuentas de prueba tienen hashes bcrypt.</li>
+        <li><code>npm run db:generate</code> y <code>npm run build</code> finalizan correctamente.</li>
+        <li>Login correcto devuelve token; contraseña incorrecta y cuenta inactiva no lo devuelven.</li>
+        <li>El token protege rutas y produce respuestas diferenciadas <code>401</code>/<code>403</code>.</li>
+        <li>Los permisos coinciden con la matriz: el guarda crea; solo el instructor destinatario acepta.</li>
+        <li>Guardas e instructores solo consultan préstamos propios; el administrador puede consultar todos.</li>
+      </ul>
+      <div class="callout warning">
+        <strong>Seguridad para producción:</strong> usa HTTPS, un secreto diferente por entorno, limita CORS y prepara revocación/renovación. Un JWT firmado no queda invalidado inmediatamente al desactivar una cuenta; con una duración de 15 minutos, los tokens existentes pueden funcionar hasta que expiren.
+      </div>
+    </section>
+
+    <section id="postman">
+      <h2>12 · Prueba final en Postman: autorización Bearer Token</h2>
+      <p>En Postman crea un Environment llamado <code>ControlLabs local</code> con estas variables. Sustituye los UUID por datos que existan en tu base:</p>
+      <pre><code>baseUrl        http://localhost:5000
+guardToken
+instructorToken
+loanId
+roomId         &lt;UUID real de una sala&gt;
+instructorId   &lt;UUID real del instructor que inicia sesión&gt;</code></pre>
+      <h3>Petición 1 · Login del guarda</h3>
+      <ol class="checklist">
+        <li>Método <code>POST</code>; URL <code>{{baseUrl}}/api/v1/auth/login</code>.</li>
+        <li>En <strong>Authorization</strong>, selecciona <strong>No Auth</strong> porque login es la ruta pública.</li>
+        <li>En <strong>Body → raw → JSON</strong>, envía:</li>
+      </ol>
+      <pre><code>{
+  "email": "guarda.seguridad@sena.edu.co",
+  "password": "&lt;contraseña provisionada para el guarda&gt;"
+}</code></pre>
+      <p>Debe responder <code>200 OK</code>. En <strong>Scripts → Post-response</strong> (o <strong>Tests</strong>, según la versión de Postman), guarda el token:</p>
+      <pre><code>pm.environment.set('guardToken', pm.response.json().data.accessToken);</code></pre>
+      <h3>Petición 2 · El guarda crea el préstamo</h3>
+      <ol class="checklist">
+        <li>Método <code>POST</code>; URL <code>{{baseUrl}}/api/v1/loans</code>.</li>
+        <li>En <strong>Authorization → Type</strong>, selecciona <strong>Bearer Token</strong>. En el campo Token escribe <code>{{guardToken}}</code>. Postman enviará <code>Authorization: Bearer &lt;token&gt;</code>.</li>
+        <li>En <strong>Body → raw → JSON</strong>, envía:</li>
+      </ol>
+      <pre><code>{
+  "roomId": "{{roomId}}",
+  "instructorId": "{{instructorId}}",
+  "numeroPc": 12
+}</code></pre>
+      <p>No envíes <code>guardaId</code>: la API lo obtiene del JWT. Debe responder <code>201 Created</code>. Guarda el ID devuelto con este script:</p>
+      <pre><code>pm.environment.set('loanId', pm.response.json().data.id);</code></pre>
+      <h3>Petición 3 · Login del instructor asignado</h3>
+      <ol class="checklist">
+        <li>Método <code>POST</code>; URL <code>{{baseUrl}}/api/v1/auth/login</code>; <strong>Authorization → No Auth</strong>.</li>
+        <li>Envía el correo y la contraseña de la cuenta cuyo UUID usaste como <code>instructorId</code>.</li>
+        <li>Guarda el token en <strong>Scripts → Post-response</strong>:</li>
+      </ol>
+      <pre><code>pm.environment.set('instructorToken', pm.response.json().data.accessToken);</code></pre>
+      <h3>Petición 4 · El instructor acepta ese préstamo</h3>
+      <ol class="checklist">
+        <li>Método <code>PUT</code>; URL <code>{{baseUrl}}/api/v1/loans/{{loanId}}/accept</code>.</li>
+        <li>En <strong>Authorization → Type</strong>, selecciona <strong>Bearer Token</strong> y escribe <code>{{instructorToken}}</code>.</li>
+        <li>No necesitas cuerpo. Envía la petición: el instructor destinatario debe obtener <code>200 OK</code> y el estado <code>APROBADO_Y_FIRMADO</code>.</li>
+      </ol>
+      <h3>Pruebas negativas para confirmar los permisos</h3>
+      <ul class="checklist">
+        <li>Repite la petición 4 con <code>{{guardToken}}</code>: debe responder <code>403 Forbidden</code>; el guarda no acepta.</li>
+        <li>Usa un token de otro instructor para aceptar el mismo <code>loanId</code>: debe responder <code>403 Forbidden</code>.</li>
+        <li>Quita el Bearer Token de <code>POST /loans</code>: debe responder <code>401 Unauthorized</code>.</li>
+      </ul>
+      <div class="callout">
+        <strong>Recorrido correcto:</strong> login como guarda → Bearer Token del guarda → crear el préstamo indicando al instructor → login como ese instructor → Bearer Token del instructor → aceptar el ID creado.
+      </div>
+    </section>
+  </main>
+  <footer>Material de orientación para aprendices · ControlLabs · Seguridad primero: valida identidad, aplica mínimo privilegio y no expongas secretos.</footer>
+</body>
+</html>
